@@ -40,10 +40,15 @@ jobs:
           # Build 32-bit (x86)
           windres.exe .\UninsIS.rc -o UninsIS.res
           fpc.exe -CX -O3 -WR -Xs -XX UninsIS.pp
+          Move-Item -Path UninsIS.dll -Destination UninsIS32.dll
 
           # Build 64-bit (x64)
-          windres.exe -F pe-x86-64 .\UninsIS.rc -o UninsIS64.res
-          fpc.exe -Px86_64 -CX -O3 -WR -Xs -XX UninsIS.pp -oUninsIS64.dll
+          # Res file is architecture-neutral, reusing UninsIS.res
+          fpc.exe -Px86_64 -CX -O3 -WR -Xs -XX UninsIS.pp
+          Move-Item -Path UninsIS.dll -Destination UninsIS64.dll
+
+          # Restore original 32-bit name for artifacts
+          Move-Item -Path UninsIS32.dll -Destination UninsIS.dll
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
