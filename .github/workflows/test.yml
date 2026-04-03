@@ -16,6 +16,8 @@ jobs:
           # Must i386, See: https://github.com/Bill-Stewart/UninsIS/pull/7#issuecomment-2790769116
           curl -LO 'http://downloads.sourceforge.net/project/freepascal/Win32/3.2.2/fpc-3.2.2.i386-win32.exe'
           .\fpc-3.2.2.i386-win32.exe /VERYSILENT /SP- /DIR="$Env:RUNNER_TEMP\fpc" | Out-Null
+          curl -LO 'http://downloads.sourceforge.net/project/freepascal/Win32/3.2.2/fpc-3.2.2.i386-win32.cross.x86_64-win64.exe'
+          .\fpc-3.2.2.i386-win32.cross.x86_64-win64.exe /VERYSILENT /SP- /DIR="$Env:RUNNER_TEMP\fpc" | Out-Null
 
           echo "$Env:RUNNER_TEMP\fpc\bin\i386-win32" >> $Env:GITHUB_PATH
 
@@ -35,8 +37,13 @@ jobs:
 
       - name: Build
         run: |
+          # Build 32-bit (x86)
           windres.exe .\UninsIS.rc -o UninsIS.res
           fpc.exe -CX -O3 -WR -Xs -XX UninsIS.pp
+
+          # Build 64-bit (x64)
+          windres.exe -F pe-x86-64 .\UninsIS.rc -o UninsIS64.res
+          fpc.exe -Px86_64 -CX -O3 -WR -Xs -XX UninsIS.pp -oUninsIS64.dll
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -44,6 +51,7 @@ jobs:
           name: UninsIS
           path: |
             UninsIS.dll
+            UninsIS64.dll
           if-no-files-found: error
           overwrite: true
           retention-days: 5

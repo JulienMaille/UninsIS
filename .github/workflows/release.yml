@@ -16,6 +16,8 @@ jobs:
           # Must i386, See: https://github.com/Bill-Stewart/UninsIS/pull/7#issuecomment-2790769116
           curl -LO 'http://downloads.sourceforge.net/project/freepascal/Win32/3.2.2/fpc-3.2.2.i386-win32.exe'
           .\fpc-3.2.2.i386-win32.exe /VERYSILENT /SP- /DIR="$Env:RUNNER_TEMP\fpc" | Out-Null
+          curl -LO 'http://downloads.sourceforge.net/project/freepascal/Win32/3.2.2/fpc-3.2.2.i386-win32.cross.x86_64-win64.exe'
+          .\fpc-3.2.2.i386-win32.cross.x86_64-win64.exe /VERYSILENT /SP- /DIR="$Env:RUNNER_TEMP\fpc" | Out-Null
 
           echo "$Env:RUNNER_TEMP\fpc\bin\i386-win32" >> $Env:GITHUB_PATH
 
@@ -35,15 +37,22 @@ jobs:
 
       - name: Build
         run: |
+          # Build 32-bit (x86)
           windres.exe .\UninsIS.rc -o UninsIS.res
           fpc.exe -CX -O3 -WR -Xs -XX UninsIS.pp
+
+          # Build 64-bit (x64)
+          windres.exe -F pe-x86-64 .\UninsIS.rc -o UninsIS64.res
+          fpc.exe -Px86_64 -CX -O3 -WR -Xs -XX UninsIS.pp -oUninsIS64.dll
 
       - name: Gen Release Notes
         run: |
           $sha256 = (Get-FileHash -Path UninsIS.dll -Algorithm SHA256).Hash.ToLower()
+          $sha256_64 = (Get-FileHash -Path UninsIS64.dll -Algorithm SHA256).Hash.ToLower()
 
           Set-Content -Path release_notes.md -Value '```'
           Add-Content -Path release_notes.md -Value "$sha256  UninsIS.dll"
+          Add-Content -Path release_notes.md -Value "$sha256_64  UninsIS64.dll"
           Add-Content -Path release_notes.md -Value '```'
 
       - name: Release
@@ -51,6 +60,7 @@ jobs:
         with:
           files: |
             UninsIS.dll
+            UninsIS64.dll
           generate_release_notes: true
           body_path: release_notes.md
           draft: false
